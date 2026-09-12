@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set up Hearth on this device</title>
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px 16px 48px; line-height: 1.5; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.05rem; margin-top: 2em; }
+  img#qr { display: block; width: 220px; height: 220px; margin: 16px auto; }
+  .button { display: inline-block; background: #3a6df0; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; }
+  ol { padding-left: 1.2em; }
+  li { margin-bottom: 0.4em; }
+  .note { background: #f4f4f5; border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<h1>Set up Hearth on this device</h1>
+<p>Hearth uses a private certificate so messages and files stay encrypted on
+the home network. Every device needs to trust it once — it's a one-time
+step.</p>
+
+<h2>On a phone: scan this</h2>
+<img id="qr" src="ca-qr.svg" alt="QR code linking to this page">
+<p>Or open this page directly on the phone's browser.</p>
+
+<h3>iPhone / iPad</h3>
+<ol>
+  <li>Tap <a class="button" href="rootCA.pem">Download certificate</a> — Safari downloads a profile.</li>
+  <li>Go to <b>Settings → General → VPN &amp; Device Management</b>, tap the downloaded profile, then <b>Install</b>.</li>
+  <li>Then go to <b>Settings → General → About → Certificate Trust Settings</b> and turn on full trust for it. (Easy to miss — both steps are required.)</li>
+</ol>
+
+<h3>Android</h3>
+<ol>
+  <li>Tap <a class="button" href="rootCA.pem">Download certificate</a>.</li>
+  <li>Open it from your notifications or Downloads — Android will prompt to install it as a CA certificate. Confirm.</li>
+</ol>
+
+<h2>On a laptop</h2>
+<p><a class="button" href="rootCA.pem">Download certificate</a></p>
+
+<h3>macOS</h3>
+<ol>
+  <li>Double-click the downloaded file — Keychain Access opens.</li>
+  <li>Find the certificate (named "mkcert ..."), double-click it, expand <b>Trust</b>, and set "When using this certificate" to <b>Always Trust</b>.</li>
+  <li>Close the window and enter your password to confirm.</li>
+</ol>
+
+<h3>Windows</h3>
+<ol>
+  <li>Double-click the downloaded file, then <b>Install Certificate</b>.</li>
+  <li>Choose <b>Local Machine</b> (or Current User), then <b>Place all certificates in the following store</b> → <b>Trusted Root Certification Authorities</b>.</li>
+  <li>Finish, and confirm the security prompt.</li>
+</ol>
+
+<p class="note">Done installing? Open Hearth at <code>https://homebot.local:8443</code>
+(adjust the port if it was changed) — no more warnings.</p>
+</body>
+</html>

@@ -3,6 +3,7 @@ data/files/
 .env
 *.pem
 *-key.pem
+deploy/ca-public/ca-qr.svg
 __pycache__/
 *.pyc
 .venv/

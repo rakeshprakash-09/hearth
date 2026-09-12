@@ -32,29 +32,54 @@ aren't what you want.
 ```
 sudo apt install mkcert   # or however it's packaged for homebot's distro
 mkcert -install           # trusts the local CA on homebot itself
-sudo mkdir -p /etc/hearth/certs
+
+sudo mkdir -p /etc/hearth/certs /etc/hearth/ca-public
+sudo chown "$(whoami)":"$(whoami)" /etc/hearth/certs /etc/hearth/ca-public
+
 mkcert -cert-file /etc/hearth/certs/homebot.local.pem \
        -key-file /etc/hearth/certs/homebot.local-key.pem \
        homebot.local
 ```
 
-Then copy `$(mkcert -CAROOT)/rootCA.pem` to each family device and trust it:
-- **iOS**: AirDrop/email the file, install as a profile in Settings, then
-  also enable it under Settings > General > About > Certificate Trust
-  Settings (both steps are required, easy to miss the second one).
-- **Android**: Settings > Security > Install a certificate > CA certificate.
-- **macOS/Windows laptops**: double-click to import into the system/login
-  keychain or certificate store, mark trusted.
+### Getting every family device to trust it, without emailing files around
+
+Each device still needs a one-time "trust this certificate" step -- that's
+unavoidable with a private CA -- but instead of AirDropping/emailing the
+root CA file around, homebot serves a small setup page over plain HTTP
+(has to be plain HTTP: a device can't yet trust an HTTPS page signed by the
+very CA it hasn't trusted yet) with a QR code for phones and a download
+link + written steps for laptops.
+
+```
+cp deploy/ca-public/index.html /etc/hearth/ca-public/
+cp "$(mkcert -CAROOT)/rootCA.pem" /etc/hearth/ca-public/rootCA.pem
+backend/.venv/bin/python deploy/generate_ca_qr.py \
+    "http://homebot.local/" /etc/hearth/ca-public/ca-qr.svg
+```
+
+(Re-run only the `generate_ca_qr.py` line if the hostname/port ever changes.)
+
+Once Caddy is running (step 4), send family members to `http://homebot.local/`
+-- or just point a phone camera at the QR on that page -- and they self-serve
+from there (iPhone, Android, macOS, and Windows steps are all on the page).
 
 ## 4. Caddy
 
 Install Caddy, then point it at `deploy/Caddyfile` (adjust the port in that
-file first if 8443 collides with anything else already running on homebot):
+file first if 8443 collides with anything else already running on homebot).
+It now defines two sites: the HTTPS app on `:8443`, and a plain-HTTP site on
+`homebot.local` (port 80) that serves only `/etc/hearth/ca-public` -- the
+setup page from step 3, never the private key in `/etc/hearth/certs`.
 
 ```
 sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
+caddy validate --config /etc/caddy/Caddyfile   # this exact config hasn't been run against a real Caddy binary yet
 sudo systemctl reload caddy
 ```
+
+If port 80 fails to bind (permission denied), Caddy's own package usually
+already grants `cap_net_bind_service`; if it's running some other way,
+`sudo setcap 'cap_net_bind_service=+ep' $(which caddy)`.
 
 ## 5. systemd services
 
@@ -68,6 +93,9 @@ sudo systemctl enable --now hearth-retention.timer
 ## 6. Verify
 
 - `sudo systemctl status hearth.service` — should be active.
+- `http://homebot.local/` from another device should show the setup page,
+  with the QR rendering and the download link actually downloading a
+  `hearth-ca.pem` file.
 - From another device on the same Wi-Fi, after trusting the root CA:
   `https://homebot.local:8443/health` should return `{"status":"ok",...}`.
 - Reboot homebot, confirm `hearth.service` comes back up on its own

@@ -5,3 +5,16 @@ homebot.local:8443 {
 	tls /etc/hearth/certs/homebot.local.pem /etc/hearth/certs/homebot.local-key.pem
 	reverse_proxy 127.0.0.1:8000
 }
+
+# Plain HTTP, deliberately -- this is how a device bootstraps trust in the
+# CA above in the first place, so it can't itself be behind that CA's TLS.
+# Only serves /etc/hearth/ca-public (the root CA + QR code + instructions),
+# never the private key in /etc/hearth/certs.
+http://homebot.local {
+	root * /etc/hearth/ca-public
+	header /rootCA.pem {
+		Content-Type "application/x-x509-ca-cert"
+		Content-Disposition "attachment; filename=hearth-ca.pem"
+	}
+	file_server
+}
