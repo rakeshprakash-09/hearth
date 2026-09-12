@@ -20,9 +20,9 @@ Tracking checklist for v1, broken down from the build order in `hearth-plan.md` 
 - [ ] Frontend: request `Notification` permission and fire a browser notification on incoming WS message (no service worker — tab must be open) — deferred to step 7 when the frontend/WS client actually exists
 
 ## 4. File upload/download with limits
-- [ ] Upload: enforce `MAX_FILE_SIZE_MB`, check free disk space, store as `/data/files/<uuid>`
-- [ ] Download: verify requester is sender or recipient of that message before serving
-- [ ] Link uploaded file to a `messages` row (`kind='file'`)
+- [x] Upload: enforce `MAX_FILE_SIZE_MB`, check free disk space, store as `/data/files/<uuid>`
+- [x] Download: verify requester is sender or recipient of that message before serving
+- [x] Link uploaded file to a `messages` row (`kind='file'`)
 
 ## 5. Presence tracking over WebSocket
 - [ ] In-memory online-device set, updated on WS connect/disconnect

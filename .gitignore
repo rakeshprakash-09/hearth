@@ -1,5 +1,5 @@
 hearth.db
-/data/files/
+data/files/
 .env
 *.pem
 *-key.pem
