@@ -86,11 +86,33 @@ limit 200. Update frontend appendMessage flow accordingly (simple: refetch last
 - Run: `python -m app.db` and `python -m app.auth` self-checks still pass.
 
 ## Acceptance checklist
-- [ ] Registration requires valid single-use pairing code (code printed on server startup)
-- [ ] WS auth via first message, no token in URL
-- [ ] Two tabs both receive messages
-- [ ] Failed upload never leaves an orphan file on disk
-- [ ] Bad recipient rejected before file bytes are written
-- [ ] WAL enabled
-- [ ] Reconnect refetches missed messages
-- [ ] Device can delete itself
+- [x] Registration requires valid single-use pairing code (minted via `python -m app.pairing`, not printed on startup -- see note below)
+- [x] WS auth via first message, no token in URL
+- [x] Two tabs both receive messages
+- [x] Failed upload never leaves an orphan file on disk
+- [x] Bad recipient rejected before file bytes are written
+- [x] WAL enabled
+- [x] Reconnect refetches missed messages
+- [x] Device can delete itself
+
+All verified: `python -m app.db`, `python -m app.auth`, `python -m app.test_retention`,
+`python -m app.test_pairing`, `python -m app.test_ws` all pass; plus a manual pass
+through the real frontend/API (pairing gate + reuse rejection, two real browser
+tabs both receiving a live push, upload-to-bad-recipient rejected with zero
+bytes written, a mid-session server restart with the client reconnecting and
+refilling an open thread, and a device deleting itself end-to-end).
+
+**Deviation from the written design:** pairing codes are minted via
+`python -m app.pairing` only, not printed on every server startup -- avoids
+piling up unused codes on every restart/reload. FIXES.md offered this as an
+explicit alternative ("or via a `python -m app.pairing --new` helper"), so
+this is picking one of the stated options, not a new one (the module takes no
+arguments, since there's nothing else it needs to do).
+
+**Bug caught during manual verification, fixed before this was checked off:**
+`delete_device` didn't clear `pairing_codes.used_by_device_id` before deleting
+the `devices` row, so self-delete always failed with a `FOREIGN KEY constraint
+failed` (device never actually removed) -- and because the physical file
+removal happens before the DB transaction, this could leave a `files` row
+pointing at a file already gone from disk. Fixed by deleting the device's
+`pairing_codes` reference in the same transaction, before the `devices` delete.
