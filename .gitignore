@@ -1,0 +1,8 @@
+hearth.db
+/data/files/
+.env
+*.pem
+*-key.pem
+__pycache__/
+*.pyc
+.venv/
