@@ -25,9 +25,9 @@ Tracking checklist for v1, broken down from the build order in `hearth-plan.md` 
 - [x] Link uploaded file to a `messages` row (`kind='file'`)
 
 ## 5. Presence tracking over WebSocket
-- [ ] In-memory online-device set, updated on WS connect/disconnect
-- [ ] Broadcast presence changes to connected clients
-- [ ] Known-conversations query (devices ever messaged, from DB) with last-seen
+- [x] In-memory online-device set, updated on WS connect/disconnect
+- [x] Broadcast presence changes to connected clients
+- [x] Known-conversations query (devices ever messaged, from DB) with last-seen
 
 ## 6. Retention job + systemd timer
 - [ ] `retention.py` — delete messages older than `RETENTION_DAYS`; for orphaned files, delete the file *then* the `files` row

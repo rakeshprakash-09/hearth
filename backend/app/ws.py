@@ -13,7 +13,13 @@ _connections: dict[str, WebSocket] = {}
 async def notify_device(device_id: str, payload: dict) -> None:
     websocket = _connections.get(device_id)
     if websocket is not None:
-        await websocket.send_json(payload)
+        await websocket.send_json({"type": "message", **payload})
+
+
+async def broadcast_presence() -> None:
+    payload = {"type": "presence", "online_device_ids": list(_connections.keys())}
+    for connection in list(_connections.values()):
+        await connection.send_json(payload)
 
 
 @router.websocket("/ws")
@@ -35,6 +41,7 @@ async def ws_endpoint(websocket: WebSocket, token: str = Query(...)):
     device_id = device["id"]
     await websocket.accept()
     _connections[device_id] = websocket
+    await broadcast_presence()
     try:
         while True:
             await websocket.receive_text()
@@ -43,3 +50,4 @@ async def ws_endpoint(websocket: WebSocket, token: str = Query(...)):
     finally:
         if _connections.get(device_id) is websocket:
             del _connections[device_id]
+        await broadcast_presence()

@@ -43,3 +43,19 @@ def register_device(body: DeviceRegisterRequest, conn: sqlite3.Connection = Depe
 @router.get("/devices/me", response_model=DeviceResponse)
 def whoami(device: sqlite3.Row = Depends(require_device)):
     return DeviceResponse(id=device["id"], name=device["name"], last_seen_at=device["last_seen_at"])
+
+
+@router.get("/devices", response_model=list[DeviceResponse])
+def list_conversations(device: sqlite3.Row = Depends(require_device), conn: sqlite3.Connection = Depends(get_db)):
+    rows = conn.execute(
+        """SELECT DISTINCT d.id, d.name, d.last_seen_at
+           FROM devices d
+           WHERE d.id IN (
+               SELECT recipient_device_id FROM messages WHERE sender_device_id = ?
+               UNION
+               SELECT sender_device_id FROM messages WHERE recipient_device_id = ?
+           )
+           ORDER BY d.last_seen_at DESC""",
+        (device["id"], device["id"]),
+    ).fetchall()
+    return [DeviceResponse(**dict(row)) for row in rows]
