@@ -1,0 +1,15 @@
+[Unit]
+Description=Hearth chat server
+After=network.target
+
+[Service]
+Type=simple
+User=hearth
+WorkingDirectory=/opt/hearth/backend
+EnvironmentFile=/opt/hearth/.env
+ExecStart=/opt/hearth/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

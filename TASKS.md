@@ -43,17 +43,17 @@ Tracking checklist for v1, broken down from the build order in `hearth-plan.md` 
 - [x] Browser `Notification` nudge on incoming message when the tab is hidden (deferred here from step 3)
 
 ## 8. Caddy + mkcert HTTPS
-- [ ] Generate local CA + cert for `homebot.local` via `mkcert`
-- [ ] `deploy/Caddyfile` — reverse proxy to Uvicorn
-- [ ] Trust root cert on each family device (phone + laptop)
+- [x] `deploy/Caddyfile` — reverse proxy to Uvicorn (config prepared; port 8443 is a placeholder, adjust to whatever's free on homebot)
+- [ ] Generate local CA + cert for `homebot.local` via `mkcert` — needs running on homebot itself, see `deploy/README.md` step 3
+- [ ] Trust root cert on each family device (phone + laptop) — needs each physical device, see `deploy/README.md` step 3
 
 ## 9. Deploy as systemd service on homebot
-- [ ] `deploy/hearth.service`
-- [ ] Enable + start, verify running
-- [ ] Reboot homebot, confirm auto-start
+- [x] `deploy/hearth.service` (config prepared, assumes repo lives at `/opt/hearth` — adjust if not)
+- [ ] Enable + start, verify running — needs homebot access, see `deploy/README.md` steps 1-2, 5-6
+- [ ] Reboot homebot, confirm auto-start — needs homebot access, see `deploy/README.md` step 6
 
 ## 10. Family dogfood week
-- [ ] One week of real use
+- [ ] One week of real use — can't be done from here, this is on you
 - [ ] Review actual usage vs `RETENTION_DAYS` / `MAX_FILE_SIZE_MB`, tune `.env`
 
 ---

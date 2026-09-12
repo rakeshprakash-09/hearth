@@ -1,0 +1,7 @@
+# Adjust the hostname:port to match your actual homebot setup and
+# whatever port is free alongside Hermes and anything else already
+# running there. Cert paths are wherever `mkcert` wrote them.
+homebot.local:8443 {
+	tls /etc/hearth/certs/homebot.local.pem /etc/hearth/certs/homebot.local-key.pem
+	reverse_proxy 127.0.0.1:8000
+}
