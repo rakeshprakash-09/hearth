@@ -98,7 +98,7 @@ body {
 .dot.offline { background: var(--muted); }
 
 .device .name { flex: 1; }
-.device.offline-row .name, .device .last-seen { color: var(--muted); font-size: 0.8rem; }
+.device .last-seen { color: var(--muted); font-size: 0.8rem; }
 
 #chat {
   flex: 1;

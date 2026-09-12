@@ -8,15 +8,15 @@ function authHeaders() {
   return { Authorization: `Bearer ${me.token}` };
 }
 
+function promptRequired(message) {
+  let value = "";
+  while (!value) value = (prompt(message) || "").trim();
+  return value;
+}
+
 async function registerDevice() {
-  let name = "";
-  while (!name) {
-    name = (prompt("Your device name (e.g. \"Rakesh's laptop\")") || "").trim();
-  }
-  let pairingCode = "";
-  while (!pairingCode) {
-    pairingCode = (prompt("Pairing code (ask whoever runs Hearth for one)") || "").trim();
-  }
+  const name = promptRequired("Your device name (e.g. \"Rakesh's laptop\")");
+  const pairingCode = promptRequired("Pairing code (ask whoever runs Hearth for one)");
   const res = await fetch("/devices", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

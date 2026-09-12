@@ -12,6 +12,15 @@ from ..db import get_db
 router = APIRouter()
 
 
+def insert_message(conn: sqlite3.Connection, message: dict) -> None:
+    conn.execute(
+        """INSERT INTO messages
+           (id, sender_device_id, recipient_device_id, kind, body, file_id, created_at)
+           VALUES (:id, :sender_device_id, :recipient_device_id, :kind, :body, :file_id, :created_at)""",
+        message,
+    )
+
+
 class SendMessageRequest(BaseModel):
     recipient_device_id: str
     body: str
@@ -46,12 +55,7 @@ def send_message(
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     try:
-        conn.execute(
-            """INSERT INTO messages
-               (id, sender_device_id, recipient_device_id, kind, body, file_id, created_at)
-               VALUES (:id, :sender_device_id, :recipient_device_id, :kind, :body, :file_id, :created_at)""",
-            message,
-        )
+        insert_message(conn, message)
         conn.commit()
     except sqlite3.IntegrityError:
         raise HTTPException(404, "recipient not found")

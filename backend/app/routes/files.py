@@ -11,7 +11,7 @@ from .. import ws
 from ..auth import require_device
 from ..config import FILES_DIR, MAX_FILE_SIZE_MB
 from ..db import get_db
-from .messages import MessageResponse
+from .messages import MessageResponse, insert_message
 
 router = APIRouter()
 
@@ -69,12 +69,7 @@ def upload_file(
         "created_at": now,
     }
     try:
-        conn.execute(
-            """INSERT INTO messages
-               (id, sender_device_id, recipient_device_id, kind, body, file_id, created_at)
-               VALUES (:id, :sender_device_id, :recipient_device_id, :kind, :body, :file_id, :created_at)""",
-            message,
-        )
+        insert_message(conn, message)
         conn.commit()
     except sqlite3.IntegrityError:
         conn.rollback()
