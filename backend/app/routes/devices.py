@@ -46,16 +46,11 @@ def whoami(device: sqlite3.Row = Depends(require_device)):
 
 
 @router.get("/devices", response_model=list[DeviceResponse])
-def list_conversations(device: sqlite3.Row = Depends(require_device), conn: sqlite3.Connection = Depends(get_db)):
+def list_devices(device: sqlite3.Row = Depends(require_device), conn: sqlite3.Connection = Depends(get_db)):
+    # At household scale, every registered device is worth showing (not just
+    # ones already messaged) -- otherwise there's no way to start a first
+    # conversation with a device, which is the app's core use case.
     rows = conn.execute(
-        """SELECT DISTINCT d.id, d.name, d.last_seen_at
-           FROM devices d
-           WHERE d.id IN (
-               SELECT recipient_device_id FROM messages WHERE sender_device_id = ?
-               UNION
-               SELECT sender_device_id FROM messages WHERE recipient_device_id = ?
-           )
-           ORDER BY d.last_seen_at DESC""",
-        (device["id"], device["id"]),
+        "SELECT id, name, last_seen_at FROM devices WHERE id != ? ORDER BY name", (device["id"],)
     ).fetchall()
     return [DeviceResponse(**dict(row)) for row in rows]

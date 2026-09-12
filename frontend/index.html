@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hearth</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <h1>Hearth</h1>
+    <div id="me"></div>
+    <ul id="device-list"></ul>
+  </aside>
+  <main id="chat">
+    <div id="chat-header">Select someone to chat with</div>
+    <div id="thread"></div>
+    <form id="send-form">
+      <label id="attach-label" for="file-input">📎</label>
+      <input id="file-input" type="file" hidden>
+      <input id="message-input" type="text" placeholder="Message" autocomplete="off" disabled>
+      <button type="submit" disabled>Send</button>
+    </form>
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

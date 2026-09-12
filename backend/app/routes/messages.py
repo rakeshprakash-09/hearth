@@ -24,6 +24,7 @@ class MessageResponse(BaseModel):
     kind: str
     body: str | None
     file_id: str | None
+    filename: str | None
     created_at: str
 
 
@@ -41,6 +42,7 @@ def send_message(
         "kind": "text",
         "body": body.body,
         "file_id": None,
+        "filename": None,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     try:
@@ -65,10 +67,12 @@ def get_thread(
     conn: sqlite3.Connection = Depends(get_db),
 ):
     rows = conn.execute(
-        """SELECT * FROM messages
-           WHERE (sender_device_id = ? AND recipient_device_id = ?)
-              OR (sender_device_id = ? AND recipient_device_id = ?)
-           ORDER BY created_at ASC""",
+        """SELECT m.*, f.filename AS filename
+           FROM messages m
+           LEFT JOIN files f ON f.id = m.file_id
+           WHERE (m.sender_device_id = ? AND m.recipient_device_id = ?)
+              OR (m.sender_device_id = ? AND m.recipient_device_id = ?)
+           ORDER BY m.created_at ASC""",
         (device["id"], device_id, device_id, device["id"]),
     ).fetchall()
     return [MessageResponse(**dict(row)) for row in rows]

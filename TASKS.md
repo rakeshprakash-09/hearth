@@ -27,7 +27,7 @@ Tracking checklist for v1, broken down from the build order in `hearth-plan.md` 
 ## 5. Presence tracking over WebSocket
 - [x] In-memory online-device set, updated on WS connect/disconnect
 - [x] Broadcast presence changes to connected clients
-- [x] Known-conversations query (devices ever messaged, from DB) with last-seen
+- [x] Device list query with last-seen — revised from "only devices ever messaged" to "every other registered device": at household scale there's no clutter concern, and filtering to messaged-only left no way to start a first conversation
 
 ## 6. Retention job + systemd timer
 - [x] `retention.py` — delete messages older than `RETENTION_DAYS`; for orphaned files, delete the file *then* the `files` row
@@ -35,11 +35,12 @@ Tracking checklist for v1, broken down from the build order in `hearth-plan.md` 
 - [x] `deploy/hearth-retention.service` + `deploy/hearth-retention.timer`
 
 ## 7. Frontend: device list, chat thread, attach UI
-- [ ] `index.html` + `style.css` skeleton
-- [ ] `app.js` — registration flow (prompt name, store token in `localStorage`)
-- [ ] Device list: online-now vs known-conversations (greyed out + last-seen)
-- [ ] Chat thread view + send text
-- [ ] File attach button + download links
+- [x] `index.html` + `style.css` skeleton
+- [x] `app.js` — registration flow (prompt name, store token in `localStorage`)
+- [x] Device list: online (live via WS presence) vs offline w/ last-seen, showing every registered device (see step 5 note)
+- [x] Chat thread view + send text
+- [x] File attach button + download links (fetch + blob, not a plain link, so the bearer token never ends up in a URL/browser history)
+- [x] Browser `Notification` nudge on incoming message when the tab is hidden (deferred here from step 3)
 
 ## 8. Caddy + mkcert HTTPS
 - [ ] Generate local CA + cert for `homebot.local` via `mkcert`

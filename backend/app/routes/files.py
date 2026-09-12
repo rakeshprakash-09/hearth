@@ -62,6 +62,7 @@ def upload_file(
         "kind": "file",
         "body": None,
         "file_id": file_id,
+        "filename": file.filename,
         "created_at": now,
     }
     try:
