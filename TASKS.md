@@ -11,13 +11,13 @@ Tracking checklist for v1, broken down from the build order in `hearth-plan.md` 
 ## 2. Device registration + token auth middleware
 - [x] `POST /devices` — create device row, generate token (`secrets.token_urlsafe(32)`), return once
 - [x] `auth.py` — bearer token verification (check against `token_hash`)
-- [ ] Apply auth check to every REST route and the WebSocket handshake (WS handshake auth lands with `ws.py` in step 3 — browsers can't set headers on a WS handshake, so the token will go as a `?token=` query param there)
+- [x] Apply auth check to every REST route and the WebSocket handshake (WS token passed as a `?token=` query param — browsers can't set headers on a WS handshake)
 
 ## 3. Text messaging (REST + WebSocket push)
-- [ ] `POST /messages` — persist a text message
-- [ ] `GET /messages/{device_id}` — fetch thread history
-- [ ] `ws.py` — push new message to recipient if their socket is connected
-- [ ] Frontend: request `Notification` permission and fire a browser notification on incoming WS message (no service worker — tab must be open)
+- [x] `POST /messages` — persist a text message
+- [x] `GET /messages/{device_id}` — fetch thread history
+- [x] `ws.py` — push new message to recipient if their socket is connected
+- [ ] Frontend: request `Notification` permission and fire a browser notification on incoming WS message (no service worker — tab must be open) — deferred to step 7 when the frontend/WS client actually exists
 
 ## 4. File upload/download with limits
 - [ ] Upload: enforce `MAX_FILE_SIZE_MB`, check free disk space, store as `/data/files/<uuid>`
