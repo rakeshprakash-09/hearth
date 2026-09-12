@@ -192,6 +192,18 @@ document.getElementById("remove-device-btn").addEventListener("click", async () 
   location.reload();
 });
 
+async function checkStorage() {
+  const res = await fetch("/storage", { headers: authHeaders() });
+  const status = await res.json();
+  const banner = document.getElementById("storage-warning");
+  if (status.warn) {
+    banner.textContent = `Storage is ${Math.round(status.used_ratio * 100)}% full -- ask whoever runs Hearth to free up space or raise the limit.`;
+    banner.hidden = false;
+  } else {
+    banner.hidden = true;
+  }
+}
+
 async function main() {
   if (!me) await registerDevice();
   document.getElementById("me").textContent = `You: ${me.name}`;
@@ -199,6 +211,7 @@ async function main() {
     Notification.requestPermission();
   }
   await loadDevices();
+  await checkStorage();
   connectWebSocket();
 }
 

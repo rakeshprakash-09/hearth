@@ -28,11 +28,24 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
   color: var(--text);
   background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+#storage-warning {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  background: #b45309;
+  color: #fff;
+  font-size: 0.85rem;
+  text-align: center;
 }
 
 #app {
   display: flex;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
 }
 
 #sidebar {

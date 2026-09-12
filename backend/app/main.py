@@ -1,12 +1,14 @@
 import os
+import sqlite3
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from .config import APP_NAME, FILES_DIR
-from .db import init_db
+from .auth import require_device
+from .config import APP_NAME, FILES_DIR, MAX_TOTAL_STORAGE_MB, STORAGE_WARNING_THRESHOLD
+from .db import get_db, init_db
 from .routes import devices, files, messages
 from . import ws
 
@@ -30,6 +32,19 @@ app.include_router(ws.router)
 @app.get("/health")
 def health():
     return {"status": "ok", "app": APP_NAME}
+
+
+@app.get("/storage")
+def storage(device: sqlite3.Row = Depends(require_device), conn: sqlite3.Connection = Depends(get_db)):
+    used_bytes = conn.execute("SELECT COALESCE(SUM(size_bytes), 0) AS n FROM files").fetchone()["n"]
+    limit_bytes = MAX_TOTAL_STORAGE_MB * 1024 * 1024
+    used_ratio = used_bytes / limit_bytes if limit_bytes else 0
+    return {
+        "used_bytes": used_bytes,
+        "limit_bytes": limit_bytes,
+        "used_ratio": used_ratio,
+        "warn": used_ratio >= STORAGE_WARNING_THRESHOLD,
+    }
 
 
 # Registered last: a catch-all that must not shadow the API routes above.
