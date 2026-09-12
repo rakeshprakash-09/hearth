@@ -30,9 +30,9 @@ Tracking checklist for v1, broken down from the build order in `hearth-plan.md` 
 - [x] Known-conversations query (devices ever messaged, from DB) with last-seen
 
 ## 6. Retention job + systemd timer
-- [ ] `retention.py` — delete messages older than `RETENTION_DAYS`; for orphaned files, delete the file *then* the `files` row
-- [ ] Seed script with fake old data to test retention before running against real messages
-- [ ] `deploy/hearth-retention.service` + `deploy/hearth-retention.timer`
+- [x] `retention.py` — delete messages older than `RETENTION_DAYS`; for orphaned files, delete the file *then* the `files` row
+- [x] Seed script with fake old data to test retention before running against real messages
+- [x] `deploy/hearth-retention.service` + `deploy/hearth-retention.timer`
 
 ## 7. Frontend: device list, chat thread, attach UI
 - [ ] `index.html` + `style.css` skeleton

@@ -1,0 +1,10 @@
+[Unit]
+Description=Hearth retention job
+After=network.target
+
+[Service]
+Type=oneshot
+User=hearth
+WorkingDirectory=/opt/hearth/backend
+EnvironmentFile=/opt/hearth/.env
+ExecStart=/opt/hearth/backend/.venv/bin/python -m app.retention
