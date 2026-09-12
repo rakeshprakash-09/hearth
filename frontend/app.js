@@ -13,11 +13,19 @@ async function registerDevice() {
   while (!name) {
     name = (prompt("Your device name (e.g. \"Rakesh's laptop\")") || "").trim();
   }
+  let pairingCode = "";
+  while (!pairingCode) {
+    pairingCode = (prompt("Pairing code (ask whoever runs Hearth for one)") || "").trim();
+  }
   const res = await fetch("/devices", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, pairing_code: pairingCode }),
   });
+  if (!res.ok) {
+    alert("Registration failed: " + (await res.json()).detail);
+    throw new Error("registration failed");
+  }
   me = await res.json();
   localStorage.setItem("hearth_device", JSON.stringify(me));
 }
@@ -111,11 +119,21 @@ async function downloadFile(fileId, filename) {
 
 function connectWebSocket() {
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
-  socket = new WebSocket(`${proto}//${location.host}/ws?token=${me.token}`);
+  socket = new WebSocket(`${proto}//${location.host}/ws`);
+  let authed = false;
+
+  socket.onopen = () => {
+    authed = false;
+    socket.send(JSON.stringify({ type: "auth", token: me.token }));
+  };
 
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
     if (data.type === "presence") {
+      if (!authed) {
+        authed = true;
+        if (currentPeerId) openThread(currentPeerId);
+      }
       onlineIds = new Set(data.online_device_ids);
       renderDeviceList();
     } else if (data.type === "message") {
@@ -165,6 +183,13 @@ document.getElementById("send-form").addEventListener("submit", async (e) => {
 
 document.getElementById("file-input").addEventListener("change", () => {
   document.getElementById("send-form").requestSubmit();
+});
+
+document.getElementById("remove-device-btn").addEventListener("click", async () => {
+  if (!confirm("Remove this device? You'll need a new pairing code to use Hearth again here.")) return;
+  await fetch(`/devices/${me.id}`, { method: "DELETE", headers: authHeaders() });
+  localStorage.removeItem("hearth_device");
+  location.reload();
 });
 
 async function main() {

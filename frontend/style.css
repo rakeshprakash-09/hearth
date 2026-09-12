@@ -54,7 +54,18 @@ body {
 #me {
   font-size: 0.85rem;
   color: var(--muted);
+  margin-bottom: 4px;
+}
+
+#remove-device-btn {
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 0;
   margin-bottom: 12px;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 #device-list {
