@@ -3,10 +3,10 @@
 Tracking checklist for v1, broken down from the build order in `hearth-plan.md` (§9). Check items off as you go; update `hearth-plan.md` only if scope actually changes.
 
 ## 1. Scaffold FastAPI + SQLite schema
-- [ ] `backend/requirements.txt` (fastapi, uvicorn)
-- [ ] `config.py` — `RETENTION_DAYS`, `MAX_FILE_SIZE_MB`, app name, loaded from `.env`
-- [ ] `db.py` — SQLite connection + schema creation (`devices`, `messages`, `files`)
-- [ ] `main.py` — app entrypoint, mounts routers
+- [x] `backend/requirements.txt` (fastapi, uvicorn)
+- [x] `config.py` — `RETENTION_DAYS`, `MAX_FILE_SIZE_MB`, app name, loaded from `.env`
+- [x] `db.py` — SQLite connection + schema creation (`devices`, `messages`, `files`)
+- [x] `main.py` — app entrypoint, mounts routers
 
 ## 2. Device registration + token auth middleware
 - [ ] `POST /devices` — create device row, generate token (`secrets.token_urlsafe(32)`), return once
