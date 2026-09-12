@@ -27,6 +27,9 @@ def upload_file(
     device: sqlite3.Row = Depends(require_device),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    if conn.execute("SELECT id FROM devices WHERE id = ?", (recipient_device_id,)).fetchone() is None:
+        raise HTTPException(404, "recipient not found")
+
     os.makedirs(FILES_DIR, exist_ok=True)
     if shutil.disk_usage(FILES_DIR).free < MAX_FILE_SIZE_BYTES:
         raise HTTPException(status.HTTP_507_INSUFFICIENT_STORAGE, "not enough free disk space on homebot")
@@ -44,7 +47,7 @@ def upload_file(
                         f"file exceeds {MAX_FILE_SIZE_MB}MB limit",
                     )
                 out.write(chunk)
-    except HTTPException:
+    except BaseException:
         os.remove(stored_path)
         raise
 

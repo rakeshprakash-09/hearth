@@ -11,6 +11,12 @@ CREATE TABLE IF NOT EXISTS devices (
     last_seen_at TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS pairing_codes (
+    code_hash TEXT PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    used_by_device_id TEXT REFERENCES devices(id)
+);
+
 CREATE TABLE IF NOT EXISTS files (
     id TEXT PRIMARY KEY,
     filename TEXT NOT NULL,
@@ -37,6 +43,7 @@ def get_connection(db_path: str | None = None) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path or config.DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode = WAL")
     return conn
 
 
@@ -68,7 +75,7 @@ if __name__ == "__main__":
         conn = get_connection(path)
         tables = {row["name"] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         conn.close()
-        assert {"devices", "files", "messages"} <= tables, tables
+        assert {"devices", "files", "messages", "pairing_codes"} <= tables, tables
         print("db self-check OK:", tables)
     finally:
         os.remove(path)

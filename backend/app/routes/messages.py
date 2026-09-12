@@ -2,7 +2,7 @@ import sqlite3
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from .. import ws
@@ -63,6 +63,7 @@ def send_message(
 @router.get("/messages/{device_id}", response_model=list[MessageResponse])
 def get_thread(
     device_id: str,
+    limit: int = Query(default=200, ge=1, le=1000),
     device: sqlite3.Row = Depends(require_device),
     conn: sqlite3.Connection = Depends(get_db),
 ):
@@ -72,7 +73,7 @@ def get_thread(
            LEFT JOIN files f ON f.id = m.file_id
            WHERE (m.sender_device_id = ? AND m.recipient_device_id = ?)
               OR (m.sender_device_id = ? AND m.recipient_device_id = ?)
-           ORDER BY m.created_at ASC""",
-        (device["id"], device_id, device_id, device["id"]),
+           ORDER BY m.created_at DESC LIMIT ?""",
+        (device["id"], device_id, device_id, device["id"], limit),
     ).fetchall()
-    return [MessageResponse(**dict(row)) for row in rows]
+    return [MessageResponse(**dict(row)) for row in reversed(rows)]
