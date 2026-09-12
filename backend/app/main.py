@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from .config import APP_NAME
 from .db import init_db
+from .routes import devices
 
 
 @asynccontextmanager
@@ -13,6 +14,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title=APP_NAME, lifespan=lifespan)
+app.include_router(devices.router)
 
 
 @app.get("/health")

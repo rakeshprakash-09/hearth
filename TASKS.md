@@ -9,9 +9,9 @@ Tracking checklist for v1, broken down from the build order in `hearth-plan.md` 
 - [x] `main.py` — app entrypoint, mounts routers
 
 ## 2. Device registration + token auth middleware
-- [ ] `POST /devices` — create device row, generate token (`secrets.token_urlsafe(32)`), return once
-- [ ] `auth.py` — bearer token verification (check against `token_hash`)
-- [ ] Apply auth check to every REST route and the WebSocket handshake
+- [x] `POST /devices` — create device row, generate token (`secrets.token_urlsafe(32)`), return once
+- [x] `auth.py` — bearer token verification (check against `token_hash`)
+- [ ] Apply auth check to every REST route and the WebSocket handshake (WS handshake auth lands with `ws.py` in step 3 — browsers can't set headers on a WS handshake, so the token will go as a `?token=` query param there)
 
 ## 3. Text messaging (REST + WebSocket push)
 - [ ] `POST /messages` — persist a text message
