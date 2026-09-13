@@ -4,19 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hearth</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8.5' fill='%233358e0'/%3E%3Cpath d='M16 8.2L23.5 15v9.1a.9.9 0 0 1-.9.9h-4.1v-6.4a.9.9 0 0 0-.9-.9h-3.2a.9.9 0 0 0-.9.9V25H9.4a.9.9 0 0 1-.9-.9V15L16 8.2z' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="storage-warning" hidden></div>
 <div id="app">
   <aside id="sidebar">
-    <h1>Hearth</h1>
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="32" height="32" rx="8.5" fill="var(--accent)"/>
+        <path d="M16 8.2L23.5 15v9.1a.9.9 0 0 1-.9.9h-4.1v-6.4a.9.9 0 0 0-.9-.9h-3.2a.9.9 0 0 0-.9.9V25H9.4a.9.9 0 0 1-.9-.9V15L16 8.2z" fill="var(--accent-ink)"/>
+      </svg>
+      <span class="wordmark">Hearth</span>
+    </div>
     <div id="me"></div>
     <button id="remove-device-btn">Remove this device</button>
+    <div class="section-label">Devices</div>
     <ul id="device-list"></ul>
   </aside>
   <main id="chat">
-    <div id="chat-header">Select someone to chat with</div>
+    <div id="chat-header"><span class="empty-title">Select someone to chat with</span></div>
     <div id="thread"></div>
     <form id="send-form">
       <label id="attach-label" for="file-input">📎</label>

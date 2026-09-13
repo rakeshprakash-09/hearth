@@ -3,6 +3,56 @@ let devices = [];
 let onlineIds = new Set();
 let currentPeerId = null;
 let socket = null;
+let lastDividerDate = null;
+
+const AVATAR_COLORS = ["#3358e0", "#7451c9", "#c9548b", "#3f9563", "#b8860b", "#2f8f9d"];
+
+function initials(name) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+function avatarColor(id) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+}
+
+function makeAvatar(device, online) {
+  const avatar = document.createElement("span");
+  avatar.className = "avatar";
+  avatar.style.setProperty("--avatar-bg", avatarColor(device.id));
+  avatar.textContent = initials(device.name);
+  const dot = document.createElement("span");
+  dot.className = "dot" + (online ? " online" : "");
+  avatar.appendChild(dot);
+  return avatar;
+}
+
+function dayLabel(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const startOf = (dt) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+  const diffDays = Math.round((startOf(now) - startOf(d)) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+  });
+}
+
+function timeLabel(iso) {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+function extLabel(filename) {
+  const ext = (filename || "").split(".").pop();
+  return ext && ext !== filename ? ext.slice(0, 4).toUpperCase() : "FILE";
+}
 
 function authHeaders() {
   return { Authorization: `Bearer ${me.token}` };
@@ -43,15 +93,16 @@ function renderDeviceList() {
     const online = onlineIds.has(d.id);
     const li = document.createElement("li");
     li.className = "device" + (d.id === currentPeerId ? " active" : "");
-    const dot = document.createElement("span");
-    dot.className = "dot " + (online ? "online" : "offline");
-    const name = document.createElement("span");
+    const meta = document.createElement("span");
+    meta.className = "meta";
+    const name = document.createElement("div");
     name.className = "name";
     name.textContent = d.name;
-    const lastSeen = document.createElement("span");
+    const lastSeen = document.createElement("div");
     lastSeen.className = "last-seen";
     lastSeen.textContent = online ? "online" : lastSeenLabel(d.last_seen_at);
-    li.append(dot, name, lastSeen);
+    meta.append(name, lastSeen);
+    li.append(makeAvatar(d, online), meta);
     li.addEventListener("click", () => openThread(d.id));
     list.appendChild(li);
   }
@@ -67,38 +118,98 @@ function lastSeenLabel(iso) {
   return `${Math.round(hours / 24)}d ago`;
 }
 
+function renderChatHeader() {
+  const peer = devices.find((d) => d.id === currentPeerId);
+  if (!peer) return;
+  const header = document.getElementById("chat-header");
+  header.innerHTML = "";
+  const online = onlineIds.has(peer.id);
+  const titleWrap = document.createElement("div");
+  const title = document.createElement("div");
+  title.className = "title";
+  title.textContent = peer.name;
+  const sub = document.createElement("div");
+  sub.className = "sub";
+  sub.textContent = online ? "online" : lastSeenLabel(peer.last_seen_at);
+  titleWrap.append(title, sub);
+  header.append(makeAvatar(peer, online), titleWrap);
+}
+
 async function openThread(deviceId) {
   currentPeerId = deviceId;
+  lastDividerDate = null;
   renderDeviceList();
-  const peer = devices.find((d) => d.id === deviceId);
-  document.getElementById("chat-header").textContent = peer ? peer.name : "";
+  renderChatHeader();
   document.getElementById("message-input").disabled = false;
   document.querySelector("#send-form button").disabled = false;
 
   const res = await fetch(`/messages/${deviceId}`, { headers: authHeaders() });
   const messages = await res.json();
   const thread = document.getElementById("thread");
+  thread.classList.remove("empty");
   thread.innerHTML = "";
-  for (const m of messages) appendMessage(m);
+  if (messages.length === 0) showEmptyThread();
+  else for (const m of messages) appendMessage(m);
+}
+
+function showEmptyThread() {
+  const thread = document.getElementById("thread");
+  thread.classList.add("empty");
+  thread.innerHTML =
+    '<svg width="40" height="40" viewBox="0 0 32 32" fill="none" aria-hidden="true">' +
+    '<rect width="32" height="32" rx="8.5" fill="var(--bubble-received)"/>' +
+    '<path d="M16 8.2L23.5 15v9.1a.9.9 0 0 1-.9.9h-4.1v-6.4a.9.9 0 0 0-.9-.9h-3.2a.9.9 0 0 0-.9.9V25H9.4a.9.9 0 0 1-.9-.9V15L16 8.2z" fill="var(--muted-2)"/>' +
+    "</svg><div>No messages yet</div>";
 }
 
 function appendMessage(m) {
   const thread = document.getElementById("thread");
-  const div = document.createElement("div");
-  div.className = "message " + (m.sender_device_id === me.id ? "sent" : "received");
+  if (thread.classList.contains("empty")) {
+    thread.classList.remove("empty");
+    thread.innerHTML = "";
+    lastDividerDate = null;
+  }
+
+  const date = new Date(m.created_at).toDateString();
+  if (date !== lastDividerDate) {
+    const divider = document.createElement("div");
+    divider.className = "day-divider";
+    divider.textContent = dayLabel(m.created_at);
+    thread.appendChild(divider);
+    lastDividerDate = date;
+  }
+
+  const sentByMe = m.sender_device_id === me.id;
+  const row = document.createElement("div");
+  row.className = "msg-row " + (sentByMe ? "sent" : "received");
+
+  const bubble = document.createElement("div");
+  bubble.className = "message " + (sentByMe ? "sent" : "received");
   if (m.kind === "text") {
-    div.textContent = m.body;
+    bubble.textContent = m.body;
   } else {
+    const chip = document.createElement("span");
+    chip.className = "file-chip";
+    const ext = document.createElement("span");
+    ext.className = "ext";
+    ext.textContent = extLabel(m.filename);
     const link = document.createElement("a");
     link.href = "#";
-    link.textContent = "📎 " + (m.filename || "file");
+    link.textContent = m.filename || "file";
     link.addEventListener("click", (e) => {
       e.preventDefault();
       downloadFile(m.file_id, m.filename);
     });
-    div.appendChild(link);
+    chip.append(ext, link);
+    bubble.appendChild(chip);
   }
-  thread.appendChild(div);
+
+  const time = document.createElement("div");
+  time.className = "msg-time";
+  time.textContent = timeLabel(m.created_at);
+
+  row.append(bubble, time);
+  thread.appendChild(row);
   thread.scrollTop = thread.scrollHeight;
 }
 
@@ -136,6 +247,7 @@ function connectWebSocket() {
       }
       onlineIds = new Set(data.online_device_ids);
       renderDeviceList();
+      renderChatHeader();
     } else if (data.type === "message") {
       if (data.sender_device_id === currentPeerId || data.recipient_device_id === currentPeerId) {
         appendMessage(data);
