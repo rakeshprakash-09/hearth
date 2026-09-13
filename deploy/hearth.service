@@ -7,7 +7,7 @@ Type=simple
 User=hearth
 WorkingDirectory=/opt/hearth/backend
 EnvironmentFile=/opt/hearth/.env
-ExecStart=/opt/hearth/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+ExecStart=/opt/hearth/backend/.venv/bin/python -m app.run
 Restart=on-failure
 RestartSec=5
 

@@ -1,111 +1,126 @@
-# Deploying Hearth on homebot
+# Deploying Hearth
 
-Everything up through the frontend has been built and tested locally. These
-steps have to happen on homebot itself and on each family device — nothing
-here has been run yet, since this session has no access to either.
+Everything through the frontend is built and CI-tested. These steps happen on
+the server machine and on each family device. Tested end-to-end on
+Debian 13 (Python 3.13) — adjust package names for your distro.
 
-## 1. Get the code onto homebot
+By default Hearth serves **plain HTTP directly from uvicorn** — no reverse
+proxy, no certificates, nothing to install on client devices. HTTPS is
+optional (see step 5) if you later want TLS or browser-notification support.
 
+Choose ONE user to run the service as before you start, and substitute
+`<deploy-user>` below wherever it appears:
+- **Dedicated service user** (e.g. `hearth`) — standard hardening, best if the
+  box is shared or the app is exposed beyond your LAN.
+- **An existing user** — perfectly fine for a single-user household box on a
+  trusted LAN; fewer accounts to maintain.
+
+`<install-root>` defaults to `/opt/hearth` — adjust everywhere if you choose
+differently (the systemd unit files under `deploy/` assume this path).
+
+## 1. Get the code and set up the environment
+
+```bash
+# If using a dedicated user:
+sudo useradd -r -m -d <install-root> hearth
+# If using an existing user, just make the directory writable by them:
+sudo mkdir -p <install-root> && sudo chown <deploy-user>:<deploy-user> <install-root>
+
+git clone <this repo> <install-root>
+cd <install-root>/backend
+python3 -m venv .venv            # Debian/Ubuntu: needs python3-venv package
+.venv/bin/pip install -r requirements.txt
 ```
-sudo useradd -r -m -d /opt/hearth hearth
-sudo -u hearth git clone <this repo> /opt/hearth
-cd /opt/hearth/backend
-sudo -u hearth python3 -m venv .venv
-sudo -u hearth .venv/bin/pip install -r requirements.txt
-```
-
-Adjust `/opt/hearth` everywhere below if you put it somewhere else — that's
-just what `hearth.service` / `hearth-retention.service` assume.
 
 ## 2. Configure
 
-```
-sudo -u hearth cp .env.example /opt/hearth/.env
-sudo -u hearth mkdir -p /opt/hearth/data/files
-```
-
-Edit `/opt/hearth/.env` if the defaults (30-day retention, 200MB file limit)
-aren't what you want.
-
-## 3. TLS cert via mkcert
-
-```
-sudo apt install mkcert   # or however it's packaged for homebot's distro
-mkcert -install           # trusts the local CA on homebot itself
-
-sudo mkdir -p /etc/hearth/certs /etc/hearth/ca-public
-sudo chown "$(whoami)":"$(whoami)" /etc/hearth/certs /etc/hearth/ca-public
-
-mkcert -cert-file /etc/hearth/certs/homebot.local.pem \
-       -key-file /etc/hearth/certs/homebot.local-key.pem \
-       homebot.local
+```bash
+cp .env.example <install-root>/.env
+mkdir -p <install-root>/data/files
 ```
 
-### Getting every family device to trust it, without emailing files around
+Edit `.env`:
+- `HEARTH_DB_PATH` / `HEARTH_FILES_DIR` — match your install root
+  (e.g. `<install-root>/data/hearth.db`).
+- `HEARTH_SERVE` — `http` (default) or `https`.
+- `HEARTH_BIND` — `0.0.0.0` so LAN devices can reach the app (default).
+- `HEARTH_PORT` — defaults to 8000.
+- Retention/limits — 30-day retention, 200MB per-file, 5GB total by default.
 
-Each device still needs a one-time "trust this certificate" step -- that's
-unavoidable with a private CA -- but instead of AirDropping/emailing the
-root CA file around, homebot serves a small setup page over plain HTTP
-(has to be plain HTTP: a device can't yet trust an HTTPS page signed by the
-very CA it hasn't trusted yet) with a QR code for phones and a download
-link + written steps for laptops.
+## 3. systemd services
 
-```
-cp deploy/ca-public/index.html /etc/hearth/ca-public/
-cp "$(mkcert -CAROOT)/rootCA.pem" /etc/hearth/ca-public/rootCA.pem
-backend/.venv/bin/python deploy/generate_ca_qr.py \
-    "http://homebot.local/" /etc/hearth/ca-public/ca-qr.svg
-```
+The unit files in `deploy/` reference `User=hearth`, `<install-root>/backend`,
+and `<install-root>/.env`. Edit them to match your chosen user and install
+root, then:
 
-(Re-run only the `generate_ca_qr.py` line if the hostname/port ever changes.)
-
-Once Caddy is running (step 4), send family members to `http://homebot.local/`
--- or just point a phone camera at the QR on that page -- and they self-serve
-from there (iPhone, Android, macOS, and Windows steps are all on the page).
-
-## 4. Caddy
-
-Install Caddy, then point it at `deploy/Caddyfile` (adjust the port in that
-file first if 8443 collides with anything else already running on homebot).
-It now defines two sites: the HTTPS app on `:8443`, and a plain-HTTP site on
-`homebot.local` (port 80) that serves only `/etc/hearth/ca-public` -- the
-setup page from step 3, never the private key in `/etc/hearth/certs`.
-
-```
-sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
-caddy validate --config /etc/caddy/Caddyfile   # this exact config hasn't been run against a real Caddy binary yet
-sudo systemctl reload caddy
-```
-
-If port 80 fails to bind (permission denied), Caddy's own package usually
-already grants `cap_net_bind_service`; if it's running some other way,
-`sudo setcap 'cap_net_bind_service=+ep' $(which caddy)`.
-
-## 5. systemd services
-
-```
+```bash
 sudo cp deploy/hearth.service deploy/hearth-retention.service deploy/hearth-retention.timer /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now hearth.service
-sudo systemctl enable --now hearth-retention.timer
+sudo systemctl enable --now hearth.service hearth-retention.timer
+systemctl status hearth.service --no-pager     # expect: active (running)
 ```
 
-## 6. Verify
+## 4. Verify and connect devices
 
-- `sudo systemctl status hearth.service` — should be active.
-- `http://homebot.local/` from another device should show the setup page,
-  with the QR rendering and the download link actually downloading a
-  `hearth-ca.pem` file.
-- From another device on the same Wi-Fi, after trusting the root CA:
-  `https://homebot.local:8443/health` should return `{"status":"ok",...}`.
-- Reboot homebot, confirm `hearth.service` comes back up on its own
-  (`systemctl is-enabled hearth.service` should say `enabled`).
-- `sudo systemctl list-timers hearth-retention.timer` to confirm it's
-  scheduled.
+```bash
+curl http://127.0.0.1:8000/health      # → {"status":"ok",...}
+systemctl list-timers hearth-retention.timer   # scheduled
+```
 
-## 7. Dogfood week
+Reboot the server; `systemctl is-active hearth.service` should be `active`
+without manual start.
 
-Real usage, not something this session can do. The two things worth
-actually checking afterward (see the earlier assessment): does the kid's
-laptop reliably get files/messages from parents, and does at least one
-large-file transfer beat whatever cloud alternative you'd otherwise use.
+On each device, open `http://<server-lan-ip>:<port>` (find the server's LAN IP
+with `ip addr`; optionally add a DNS/hosts name so it's a memorable URL).
+Then:
+
+1. Generate a pairing code on the server (one per device, single use, no expiry):
+   ```bash
+   cd <install-root>/backend && .venv/bin/python -m app.pairing
+   ```
+2. Enter a device name + the code in the web UI. Repeat per device — each code
+   registers exactly one.
+
+No certificates or browser settings to touch on devices in HTTP mode.
+
+## 5. HTTPS (optional)
+
+Two things HTTP doesn't give you, and when they matter:
+
+- **Encryption on the wire** — only relevant if untrusted devices join your
+  LAN. Home Wi-Fi (WPA2/3) already encrypts the air.
+- **Browser "secure context"** — required for web notifications. If you want
+  "new message" push-style popups, you need HTTPS.
+
+If you want HTTPS, two routes:
+
+**a. Static cert (e.g. mkcert / internal CA):** uvicorn terminates TLS itself —
+no reverse proxy needed. Set in `.env`:
+
+```
+HEARTH_SERVE=https
+HEARTH_TLS_CERT=/path/to/cert.pem
+HEARTH_TLS_KEY=/path/to/key.pem
+```
+
+Startup fails loudly if either file is missing. Note mkcert-style local CAs
+must be installed and trusted on every client device, and on Android may trip
+banking-app attestation checks — this is exactly why HTTP is the default.
+
+**b. Publicly-trusted cert (Let's Encrypt DNS-01):** needed for browser
+notifications without touching client devices. Requires a domain and a DNS
+provider; certbot or Caddy's DNS plugin handles issuance + auto-renewal, then
+either run Caddy in front or feed the renewed certs to uvicorn via the same
+`HEARTH_TLS_CERT`/`HEARTH_TLS_KEY` paths.
+
+Restart the service after changing `.env`:
+`sudo systemctl restart hearth.service`.
+
+## 6. Dogfood
+
+Real usage, not something a checklist can do. Worth actually watching:
+- Do all devices reliably receive messages/files (including ones sent while
+  they were offline — history refetches on reconnect)?
+- Does at least one large-file transfer beat whatever cloud alternative you'd
+  otherwise use?
+- Does the retention timer clean up without touching anything recent?
