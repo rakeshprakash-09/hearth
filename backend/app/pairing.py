@@ -2,6 +2,7 @@ import secrets
 import sqlite3
 from datetime import datetime, timezone
 
+from . import config
 from .auth import hash_token
 
 CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"  # no 0/O/1/I, hard to misread
@@ -9,6 +10,8 @@ CODE_LENGTH = 8
 
 
 def generate_code() -> str:
+    if config.PAIRING_CODE:
+        return config.PAIRING_CODE.strip().upper()
     return "".join(secrets.choice(CODE_ALPHABET) for _ in range(CODE_LENGTH))
 
 

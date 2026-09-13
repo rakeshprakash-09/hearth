@@ -86,6 +86,13 @@ def main():
     assert sorted(results) == [False, True], results
     print("concurrent redemption: exactly one winner, as expected")
 
+    # HEARTH_PAIRING_CODE override
+    config.PAIRING_CODE = "fixed123"
+    assert pairing.generate_code() == "FIXED123"
+    config.PAIRING_CODE = ""
+    assert pairing.generate_code() != "FIXED123"
+    print("pairing code override OK")
+
     print("pairing self-check OK")
 
 
