@@ -30,6 +30,8 @@ def create_pairing_code(conn: sqlite3.Connection) -> str:
 
 
 def redeem_pairing_code(conn: sqlite3.Connection, code: str, device_id: str) -> bool:
+    if config.PAIRING_CODE and _normalize(code) == _normalize(config.PAIRING_CODE):
+        return True  # reusable default code: not single-use, no DB row needed
     cursor = conn.execute(
         "UPDATE pairing_codes SET used_by_device_id = ? WHERE code_hash = ? AND used_by_device_id IS NULL",
         (device_id, hash_token(_normalize(code))),

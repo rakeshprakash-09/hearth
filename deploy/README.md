@@ -74,12 +74,16 @@ On each device, open `http://<server-lan-ip>:<port>` (find the server's LAN IP
 with `ip addr`; optionally add a DNS/hosts name so it's a memorable URL).
 Then:
 
-1. Generate a pairing code on the server (one per device, single use, no expiry):
-   ```bash
-   cd <install-root>/backend && .venv/bin/python -m app.pairing
-   ```
-2. Enter a device name + the code in the web UI. Repeat per device — each code
-   registers exactly one.
+1. Get a pairing code, either:
+   - **Fixed/reusable**: set `HEARTH_PAIRING_CODE` in `.env` and restart the
+     service. That code works for any number of devices, indefinitely — no
+     per-device generation step.
+   - **One-time**: leave `HEARTH_PAIRING_CODE` unset and generate a fresh
+     single-use code per device:
+     ```bash
+     cd <install-root>/backend && .venv/bin/python -m app.pairing
+     ```
+2. Enter a device name + the code in the web UI.
 
 No certificates or browser settings to touch on devices in HTTP mode.
 

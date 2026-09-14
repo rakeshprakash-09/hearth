@@ -93,6 +93,18 @@ def main():
     assert pairing.generate_code() != "FIXED123"
     print("pairing code override OK")
 
+    # HEARTH_PAIRING_CODE is reusable: same code registers multiple devices,
+    # with no pairing_codes row required.
+    config.PAIRING_CODE = "housecode"
+    conn3 = get_connection()
+    for name in ("device-a", "device-b"):
+        resp = register_device(DeviceRegisterRequest(name=name, pairing_code="HouseCode"), conn3)
+        assert resp.token, resp
+    assert device_count(conn3) == 5, device_count(conn3)  # +2 on top of the 3 devices registered above
+    conn3.close()
+    config.PAIRING_CODE = ""
+    print("reusable default pairing code OK")
+
     print("pairing self-check OK")
 
 
