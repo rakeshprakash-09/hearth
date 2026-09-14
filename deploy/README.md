@@ -89,36 +89,9 @@ No certificates or browser settings to touch on devices in HTTP mode.
 
 ## 5. HTTPS (optional)
 
-Two things HTTP doesn't give you, and when they matter:
-
-- **Encryption on the wire** — only relevant if untrusted devices join your
-  LAN. Home Wi-Fi (WPA2/3) already encrypts the air.
-- **Browser "secure context"** — required for web notifications. If you want
-  "new message" push-style popups, you need HTTPS.
-
-If you want HTTPS, two routes:
-
-**a. Static cert (e.g. mkcert / internal CA):** uvicorn terminates TLS itself —
-no reverse proxy needed. Set in `.env`:
-
-```
-HEARTH_SERVE=https
-HEARTH_TLS_CERT=/path/to/cert.pem
-HEARTH_TLS_KEY=/path/to/key.pem
-```
-
-Startup fails loudly if either file is missing. Note mkcert-style local CAs
-must be installed and trusted on every client device, and on Android may trip
-banking-app attestation checks — this is exactly why HTTP is the default.
-
-**b. Publicly-trusted cert (Let's Encrypt DNS-01):** needed for browser
-notifications without touching client devices. Requires a domain and a DNS
-provider; certbot or Caddy's DNS plugin handles issuance + auto-renewal, then
-either run Caddy in front or feed the renewed certs to uvicorn via the same
-`HEARTH_TLS_CERT`/`HEARTH_TLS_KEY` paths.
-
-Restart the service after changing `.env`:
-`sudo systemctl restart hearth.service`.
+Plain HTTP (above) is enough for most households. If you want encryption on
+the wire or browser push notifications, see **[HTTPS.md](HTTPS.md)** for the
+full setup, including the self-service QR-code device-trust flow.
 
 ## 6. Dogfood
 
