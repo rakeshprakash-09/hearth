@@ -58,26 +58,54 @@ function authHeaders() {
   return { Authorization: `Bearer ${me.token}` };
 }
 
-function promptRequired(message) {
-  let value = "";
-  while (!value) value = (prompt(message) || "").trim();
-  return value;
-}
-
 async function registerDevice() {
-  const name = promptRequired("Your device name (e.g. \"Rakesh's laptop\")");
-  const pairingCode = promptRequired("Pairing code (ask whoever runs Hearth for one)");
-  const res = await fetch("/devices", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, pairing_code: pairingCode }),
-  });
-  if (!res.ok) {
-    alert("Registration failed: " + (await res.json()).detail);
-    throw new Error("registration failed");
+  const overlay = document.getElementById("register-overlay");
+  const form = document.getElementById("register-form");
+  const error = document.getElementById("register-error");
+  const submit = form.querySelector("button[type=submit]");
+  const nameInput = document.getElementById("reg-name");
+  const codeInput = document.getElementById("reg-code");
+  // the form never posts — the JS below decides what happens per attempt
+  form.addEventListener("submit", (e) => e.preventDefault());
+  overlay.hidden = false;
+  nameInput.focus();
+  for (;;) {
+    await new Promise((resolve) => form.addEventListener("submit", resolve, { once: true }));
+    const name = nameInput.value.trim();
+    const pairingCode = codeInput.value.trim().toUpperCase();
+    if (!name || !pairingCode) {
+      error.textContent = "Enter a device name and the pairing code.";
+      error.hidden = false;
+      continue;
+    }
+    error.hidden = true;
+    submit.disabled = true;
+    let res;
+    try {
+      res = await fetch("/devices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, pairing_code: pairingCode }),
+      });
+    } catch {
+      submit.disabled = false;
+      error.textContent = "Could not reach Hearth — check the address and try again.";
+      error.hidden = false;
+      continue;
+    }
+    submit.disabled = false;
+    if (!res.ok) {
+      const detail = (await res.json()).detail;
+      error.textContent =
+        "Registration failed: " + (typeof detail === "string" ? detail : "check the code and try again.");
+      error.hidden = false;
+      continue;
+    }
+    me = await res.json();
+    localStorage.setItem("hearth_device", JSON.stringify(me));
+    overlay.hidden = true;
+    return;
   }
-  me = await res.json();
-  localStorage.setItem("hearth_device", JSON.stringify(me));
 }
 
 async function loadDevices() {
@@ -89,10 +117,19 @@ async function loadDevices() {
 function renderDeviceList() {
   const list = document.getElementById("device-list");
   list.innerHTML = "";
+  if (devices.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "list-empty";
+    empty.textContent = "No other devices yet — generate a pairing code on the server to add one.";
+    list.appendChild(empty);
+    return;
+  }
   for (const d of devices) {
     const online = onlineIds.has(d.id);
     const li = document.createElement("li");
-    li.className = "device" + (d.id === currentPeerId ? " active" : "");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "device-btn" + (d.id === currentPeerId ? " active" : "");
     const meta = document.createElement("span");
     meta.className = "meta";
     const name = document.createElement("div");
@@ -102,8 +139,9 @@ function renderDeviceList() {
     lastSeen.className = "last-seen";
     lastSeen.textContent = online ? "online" : lastSeenLabel(d.last_seen_at);
     meta.append(name, lastSeen);
-    li.append(makeAvatar(d, online), meta);
-    li.addEventListener("click", () => openThread(d.id));
+    btn.append(makeAvatar(d, online), meta);
+    btn.addEventListener("click", () => openThread(d.id));
+    li.appendChild(btn);
     list.appendChild(li);
   }
 }
@@ -121,8 +159,8 @@ function lastSeenLabel(iso) {
 function renderChatHeader() {
   const peer = devices.find((d) => d.id === currentPeerId);
   if (!peer) return;
-  const header = document.getElementById("chat-header");
-  header.innerHTML = "";
+  const box = document.getElementById("chat-peer");
+  box.innerHTML = "";
   const online = onlineIds.has(peer.id);
   const titleWrap = document.createElement("div");
   const title = document.createElement("div");
@@ -132,12 +170,13 @@ function renderChatHeader() {
   sub.className = "sub";
   sub.textContent = online ? "online" : lastSeenLabel(peer.last_seen_at);
   titleWrap.append(title, sub);
-  header.append(makeAvatar(peer, online), titleWrap);
+  box.append(makeAvatar(peer, online), titleWrap);
 }
 
 async function openThread(deviceId) {
   currentPeerId = deviceId;
   lastDividerDate = null;
+  document.getElementById("app").classList.add("chat-open");
   renderDeviceList();
   renderChatHeader();
   document.getElementById("message-input").disabled = false;
@@ -193,8 +232,9 @@ function appendMessage(m) {
     const ext = document.createElement("span");
     ext.className = "ext";
     ext.textContent = extLabel(m.filename);
-    const link = document.createElement("a");
-    link.href = "#";
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "file-link";
     link.textContent = m.filename || "file";
     link.addEventListener("click", (e) => {
       e.preventDefault();
@@ -297,8 +337,26 @@ document.getElementById("file-input").addEventListener("change", () => {
   document.getElementById("send-form").requestSubmit();
 });
 
+document.getElementById("back-btn").addEventListener("click", () => {
+  document.getElementById("app").classList.remove("chat-open");
+});
+
+let removeArmed = false;
+let removeTimer = null;
 document.getElementById("remove-device-btn").addEventListener("click", async () => {
-  if (!confirm("Remove this device? You'll need a new pairing code to use Hearth again here.")) return;
+  const btn = document.getElementById("remove-device-btn");
+  if (!removeArmed) {
+    removeArmed = true;
+    btn.textContent = "Tap again to confirm removal";
+    btn.classList.add("armed");
+    removeTimer = setTimeout(() => {
+      removeArmed = false;
+      btn.textContent = "Remove this device";
+      btn.classList.remove("armed");
+    }, 4000);
+    return;
+  }
+  clearTimeout(removeTimer);
   await fetch(`/devices/${me.id}`, { method: "DELETE", headers: authHeaders() });
   localStorage.removeItem("hearth_device");
   location.reload();
@@ -316,8 +374,7 @@ async function checkStorage() {
   }
 }
 
-async function main() {
-  if (!me) await registerDevice();
+async function startApp() {
   document.getElementById("me").textContent = `You: ${me.name}`;
   if ("Notification" in window && Notification.permission === "default") {
     Notification.requestPermission();
@@ -325,6 +382,11 @@ async function main() {
   await loadDevices();
   await checkStorage();
   connectWebSocket();
+}
+
+async function main() {
+  if (!me) await registerDevice();
+  await startApp();
 }
 
 main();

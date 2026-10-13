@@ -2,10 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hearth</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8.5' fill='%233358e0'/%3E%3Cpath d='M16 8.2L23.5 15v9.1a.9.9 0 0 1-.9.9h-4.1v-6.4a.9.9 0 0 0-.9-.9h-3.2a.9.9 0 0 0-.9.9V25H9.4a.9.9 0 0 1-.9-.9V15L16 8.2z' fill='%23fff'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f6f8">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1b1c21">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hearth">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <div id="storage-warning" hidden></div>
@@ -24,16 +32,45 @@
     <ul id="device-list"></ul>
   </aside>
   <main id="chat">
-    <div id="chat-header"><span class="empty-title">Select someone to chat with</span></div>
+    <div id="chat-header">
+      <button id="back-btn" class="back" aria-label="Back to device list" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div id="chat-peer"><span class="empty-title">Select someone to chat with</span></div>
+    </div>
     <div id="thread"></div>
     <form id="send-form">
-      <label id="attach-label" for="file-input">📎</label>
+      <label id="attach-label" for="file-input" aria-label="Attach file" title="Attach file">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M20 11.5l-8.1 8.1a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.4 8.5a1.7 1.7 0 0 1-2.4-2.4l7.4-7.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </label>
       <input id="file-input" type="file" hidden>
-      <input id="message-input" type="text" placeholder="Message" autocomplete="off" disabled>
+      <input id="message-input" type="text" placeholder="Message" autocomplete="off" enterkeyhint="send" disabled>
       <button type="submit" disabled>Send</button>
     </form>
   </main>
 </div>
-<script src="app.js"></script>
+<div id="register-overlay" hidden>
+  <form id="register-form">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="32" height="32" rx="8.5" fill="var(--accent)"/>
+        <path d="M16 8.2L23.5 15v9.1a.9.9 0 0 1-.9.9h-4.1v-6.4a.9.9 0 0 0-.9-.9h-3.2a.9.9 0 0 0-.9.9V25H9.4a.9.9 0 0 1-.9-.9V15L16 8.2z" fill="var(--accent-ink)"/>
+      </svg>
+      <span class="wordmark">Hearth</span>
+    </div>
+    <p class="register-intro">This device isn't registered with Hearth yet. Give it a name, then enter the pairing code from whoever runs the server.</p>
+    <label for="reg-name">Device name</label>
+    <input id="reg-name" type="text" required autocomplete="off" autocapitalize="words" placeholder="e.g. Rakesh's phone" enterkeyhint="next">
+    <label for="reg-code">Pairing code</label>
+    <input id="reg-code" type="text" required autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="8 characters" enterkeyhint="done">
+    <div id="register-error" role="alert" hidden></div>
+    <button type="submit">Join Hearth</button>
+  </form>
+</div>
+<script src="/app.js"></script>
 </body>
 </html>
